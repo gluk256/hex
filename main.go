@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"io/ioutil"
-	"strings"
 	"math/rand"
+	"os"
+	"strings"
 	"time"
+
+	"github.com/gluk256/crypto/crutils"
 )
 
 var (
@@ -22,7 +24,8 @@ func help() {
 	fmt.Println("\t h help")
 	fmt.Println("\t e encode")
 	fmt.Println("\t d decode")
-
+	fmt.Println("\t i input from file")
+	fmt.Println("\t o output to file")
 }
 
 func readFile(name string) []byte {
@@ -84,7 +87,12 @@ func main() {
 	if encode {
 		res = hexEncode(src)
 	} else {
-		res = hexDecode(src)
+		var err error
+		res, err = crutils.HexDecode(src)
+		if err != nil {
+			fmt.Printf("Error: %s\n", err.Error())
+			return
+		}
 	}
 
 	if outFile {
@@ -110,46 +118,3 @@ func hexEncode(src []byte) []byte {
 	s := fmt.Sprintf("%x", src)
 	return []byte(s)
 }
-
-func convert(b byte) int {
-	if b >= 48 && b <= 57 {
-		return int(b - 48)
-	}
-	if b >= 65 && b <= 70 {
-		return int(b - 65) + 10
-	}
-	if b >= 97 && b <= 102 {
-		return int(b - 97) + 10
-	}
-	return -1
-}
-
-func hexDecode(src []byte) []byte {
-	for i := len(src) - 1; i >=0; i-- {
-		if src[i] > 32 && src[i] < 128 {
-			break
-		} else {
-			src = src[:len(src) - 1]
-		}
-	}
-
-	sz := len(src)
-	if sz % 2 == 1 {
-		fmt.Printf("Error decoding: odd src size %d\n", sz)
-		os.Exit(0)
-	}
-
-	var dst []byte
-	for i := 0; i < sz; i += 2 {
-		a := convert(src[i])
-		b := convert(src[i+1])
-		if a < 0 || b < 0 {
-			fmt.Printf("Error deocding: illegal byte %s\n", string(src[i:i+2]))
-			os.Exit(0)
-		}
-		dst = append(dst, byte(16*a+b))
-	}
-	return dst
-}
-
-
