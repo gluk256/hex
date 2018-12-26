@@ -19,7 +19,7 @@ var (
 )
 
 func help() {
-	fmt.Println("hex v.0.12")
+	fmt.Println("hex v.0.13")
 	fmt.Println("USAGE: hex [flags] [src]")
 	fmt.Println("\t h help")
 	fmt.Println("\t e encode")
@@ -39,7 +39,7 @@ func readFile(name string) []byte {
 
 func main() {
 	if len(os.Args) > 1 {
-		if os.Args[1][0] == 'h' {
+		if strings.Contains(os.Args[1], "h") {
 			help()
 			return
 		}
@@ -47,6 +47,7 @@ func main() {
 
 	if len(os.Args) < 3 {
 		fmt.Println("Error: not enough parameters")
+		help()
 		return
 	} else if len(os.Args) > 3 {
 		outputFileName = os.Args[3]
