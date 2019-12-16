@@ -24,7 +24,7 @@ var (
 )
 
 func help() {
-	fmt.Println("hex v.0.14.8")
+	fmt.Println("hex v.0.14.9")
 	fmt.Println("USAGE: hex flags src [dst]")
 	fmt.Println("\t h help")
 	fmt.Println("\t e encode")
@@ -125,6 +125,11 @@ func saveResult(res []byte) {
 }
 
 func processResult(data []byte) {
+	if len(data) < PageSize {
+		fmt.Printf("%x\n", data)
+		return
+	}
+
 	exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 	exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
 	defer exec.Command("stty", "-F", "/dev/tty", "echo").Run()
@@ -134,25 +139,25 @@ func processResult(data []byte) {
 	var pg int
 	var b []byte = make([]byte, 1)
 	for b[0] != byte(27) && b[0] != byte(113) { // esc or 'q'
-		c := b[0]
-		if c == 45 || c == 55 || c == 56 || c == 57 {
-			pg--
-			if pg < 0 {
-				pg = 0
-			}
-		} else if c == 43 || c == 46 || c == 48 || c == 49 || c == 50 || c == 51 || c == 10 {
-			pg++
-			if pg >= total {
-				pg = total - 1
-			}
-		}
-
+		pg = processCommand(b[0], pg, total)
 		printPage(data, pg)
-		if len(data) < PageSize {
-			break
-		}
 		os.Stdin.Read(b)
 	}
+}
+
+func processCommand(c byte, pg int, total int) int {
+	if c == 45 || c == 55 || c == 56 || c == 57 {
+		pg--
+		if pg < 0 {
+			pg = 0
+		}
+	} else if c == 43 || c == 46 || c == 48 || c == 49 || c == 50 || c == 51 || c == 10 {
+		pg++
+		if pg >= total {
+			pg = total - 1
+		}
+	}
+	return pg
 }
 
 func printPage(data []byte, pg int) {
