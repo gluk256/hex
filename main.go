@@ -106,8 +106,10 @@ func main() {
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return
-		} else {
+		} else if outFile {
 			saveResult(res)
+		} else {
+			fmt.Println(string(res))
 		}
 	}
 }
