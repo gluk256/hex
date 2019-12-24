@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -9,8 +10,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/gluk256/crypto/crutils"
 )
 
 const PageSize = 1503
@@ -24,7 +23,7 @@ var (
 )
 
 func help() {
-	fmt.Println("hex v.0.14.9")
+	fmt.Println("hex v.0.14.11")
 	fmt.Println("USAGE: hex flags src [dst]")
 	fmt.Println("\t h help")
 	fmt.Println("\t e encode")
@@ -44,13 +43,13 @@ func readFile(name string) []byte {
 
 	r := bufio.NewReader(f)
 	b := make([]byte, 1024*1024)
-	_, err = r.Read(b)
+	i, err := r.Read(b)
 	if err != nil {
 		fmt.Printf("Failed to read file [%s]\n", name)
 		fmt.Printf("Error: [%s]\n", err.Error())
 		os.Exit(0)
 	}
-	return b
+	return b[:i]
 }
 
 func processFlags() {
@@ -102,7 +101,8 @@ func main() {
 			processResult(src)
 		}
 	} else {
-		res, err := crutils.HexDecode(src)
+		var res []byte
+		_, err := hex.Decode(res, src)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
 			return
@@ -126,6 +126,21 @@ func saveResult(res []byte) {
 	}
 }
 
+func processCommand(c byte, pg int, total int) int {
+	if c == 45 || c == 55 || c == 56 || c == 57 {
+		pg--
+		if pg < 0 {
+			pg = 0
+		}
+	} else if c == 43 || c == 46 || c == 48 || c == 49 || c == 50 || c == 51 || c == 10 {
+		pg++
+		if pg >= total {
+			pg = total - 1
+		}
+	}
+	return pg
+}
+
 func processResult(data []byte) {
 	if len(data) < PageSize {
 		fmt.Printf("%x\n", data)
@@ -142,32 +157,17 @@ func processResult(data []byte) {
 	var b []byte = make([]byte, 1)
 	for b[0] != byte(27) && b[0] != byte(113) { // esc or 'q'
 		pg = processCommand(b[0], pg, total)
-		printPage(data, pg)
+		printPage(data, pg, total)
 		os.Stdin.Read(b)
 	}
 }
 
-func processCommand(c byte, pg int, total int) int {
-	if c == 45 || c == 55 || c == 56 || c == 57 {
-		pg--
-		if pg < 0 {
-			pg = 0
-		}
-	} else if c == 43 || c == 46 || c == 48 || c == 49 || c == 50 || c == 51 || c == 10 {
-		pg++
-		if pg >= total {
-			pg = total - 1
-		}
-	}
-	return pg
-}
-
-func printPage(data []byte, pg int) {
-	fmt.Printf("PAGE %d\n\n", pg)
+func printPage(data []byte, pg int, total int) {
 	beg := pg * PageSize
 	end := beg + PageSize
 	if end > len(data) {
 		end = len(data)
 	}
+	fmt.Printf("PAGE %d of %d\n\n", pg, total)
 	fmt.Printf("%x\n\n", data[beg:end])
 }
