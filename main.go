@@ -23,7 +23,7 @@ var (
 )
 
 func help() {
-	fmt.Println("hex v.0.14.11")
+	fmt.Println("hex v.0.15")
 	fmt.Println("USAGE: hex flags src [dst]")
 	fmt.Println("\t h help")
 	fmt.Println("\t e encode")
@@ -126,19 +126,22 @@ func saveResult(res []byte) {
 	}
 }
 
-func processCommand(c byte, pg int, total int) int {
+func processCommand(c byte, pg int, total int) (int, bool) {
+	var ok bool
 	if c == 45 || c == 55 || c == 56 || c == 57 {
 		pg--
 		if pg < 0 {
 			pg = 0
 		}
+		ok = true
 	} else if c == 43 || c == 46 || c == 48 || c == 49 || c == 50 || c == 51 || c == 10 {
 		pg++
 		if pg >= total {
 			pg = total - 1
 		}
+		ok = true
 	}
-	return pg
+	return pg, ok
 }
 
 func processResult(data []byte) {
@@ -154,10 +157,14 @@ func processResult(data []byte) {
 
 	total := len(data)/PageSize + 1
 	var pg int
+	var ok bool
 	var b []byte = make([]byte, 1)
+	b[0] = 45
 	for b[0] != byte(27) && b[0] != byte(113) { // esc or 'q'
-		pg = processCommand(b[0], pg, total)
-		printPage(data, pg, total)
+		pg, ok = processCommand(b[0], pg, total)
+		if ok {
+			printPage(data, pg, total)
+		}
 		os.Stdin.Read(b)
 	}
 }
@@ -168,6 +175,6 @@ func printPage(data []byte, pg int, total int) {
 	if end > len(data) {
 		end = len(data)
 	}
-	fmt.Printf("PAGE %d of %d\n\n", pg, total)
+	fmt.Printf("PAGE %d of %d [%d bytes]\n\n", pg+1, total, PageSize)
 	fmt.Printf("%x\n\n", data[beg:end])
 }
