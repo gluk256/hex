@@ -101,7 +101,7 @@ func main() {
 			processResult(src)
 		}
 	} else {
-		var res []byte
+		res := make([]byte, 66000)
 		_, err := hex.Decode(res, src)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err.Error())
